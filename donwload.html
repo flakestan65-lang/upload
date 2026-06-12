@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Скачивание файлов — CloudShare</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .download-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .download-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            color: #333;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        }
+        
+        .download-card h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .download-card .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .file-item-download {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .file-icon-dl {
+            font-size: 2rem;
+        }
+        
+        .file-info-dl {
+            flex: 1;
+        }
+        
+        .file-name-dl {
+            font-weight: 600;
+            color: #2d3748;
+            word-break: break-all;
+        }
+        
+        .file-size-dl {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        
+        .download-btn-dl {
+            background: linear-gradient(135deg, #48bb78, #38a169);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+            white-space: nowrap;
+        }
+        
+        .download-btn-dl:hover {
+            transform: scale(1.05);
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        
+        .expires-info-dl {
+            margin-top: 20px;
+            padding: 12px;
+            background: #fff5f5;
+            border-radius: 10px;
+            color: #c53030;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="download-container">
+        <div class="download-card" id="downloadCard">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Загрузка информации о файлах...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <!-- КОНФИГ (вставь сюда свои данные из Firebase Console) -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "ТВОЙ_API_KEY",
+            authDomain: "ТВОЙ_AUTH_DOMAIN",
+            databaseURL: "ТВОЙ_DATABASE_URL",
+            projectId: "ТВОЙ_PROJECT_ID",
+            storageBucket: "ТВОЙ_STORAGE_BUCKET",
+            messagingSenderId: "ТВОЙ_MESSAGING_SENDER_ID",
+            appId: "ТВОЙ_APP_ID",
+            measurementId: "ТВОЙ_MEASUREMENT_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+    </script>
+
+    <script>
+        const database = firebase.database();
+        const storage = firebase.storage();
+
+        function getFileIcon(type) {
+            if (type.startsWith('image/')) return '🖼️';
+            if (type.startsWith('video/')) return '🎬';
+            if (type.startsWith('audio/')) return '🎵';
+            if (type.includes('pdf')) return '📄';
+            if (type.includes('zip') || type.includes('rar')) return '📦';
+            return '📎';
+        }
+
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 Б';
+            const k = 1024;
+            const sizes = ['Б', 'КБ', 'МБ', 'ГБ'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function loadFiles() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const linkId = urlParams.get('id');
+
+            if (!linkId) {
+                showError('❌ Ссылка не указана');
+                return;
+            }
+
+            try {
+                const snapshot = await database.ref(`shares/${linkId}`).once('value');
+                const data = snapshot.val();
+
+                if (!data) {
+                    showError('❌ Ссылка не найдена или истекла');
+                    return;
+                }
+
+                // Проверяем срок действия
+                if (Date.now() > data.expiresAt) {
+                    // Удаляем просроченные данные
+                    await database.ref(`shares/${linkId}`).remove();
+                    showError('⏰ Срок действия ссылки истёк');
+                    return;
+                }
+
+                renderFiles(data, linkId);
+
+            } catch (error) {
+                console.error(error);
+                showError('❌ Ошибка загрузки данных');
+            }
+        }
+
+        function renderFiles(data, linkId) {
+            const card = document.getElementById('downloadCard');
+            const expiresDate = new Date(data.expiresAt);
+
+            const filesHtml = data.files.map((file, index) => `
+                <div class="file-item-download">
+                    <span class="file-icon-dl">${getFileIcon(file.type)}</span>
+                    <div class="file-info-dl">
+                        <div class="file-name-dl">${file.name}</div>
+                        <div class="file-size-dl">${formatSize(file.size)}</div>
+                    </div>
+                    <a href="${file.url}" class="download-btn-dl" download="${file.name}" target="_blank">
+                        ⬇️ Скачать
+                    </a>
+                </div>
+            `).join('');
+
+            card.innerHTML = `
+                <h1>📦 Ваши файлы</h1>
+                <p class="subtitle">Нажмите "Скачать" для загрузки</p>
+                ${filesHtml}
+                <div class="expires-info-dl">
+                    ⏰ Ссылка действительна до: ${expiresDate.toLocaleString('ru-RU')}
+                </div>
+            `;
+
+            // Увеличиваем счётчик скачиваний
+            database.ref(`shares/${linkId}/downloadCount`).transaction(count => (count || 0) + 1);
+        }
+
+        function showError(message) {
+            const card = document.getElementById('downloadCard');
+            card.innerHTML = `
+                <div class="error-message">
+                    <div class="error-icon">😕</div>
+                    <h2>${message}</h2>
+                    <p style="margin-top: 15px; color: #666;">
+                        Возможно, ссылка устарела или была удалена.
+                    </p>
+                </div>
+            `;
+        }
+
+        loadFiles();
+    </script>
+</body>
+</html>
