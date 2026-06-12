@@ -3,228 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudShare — Быстрый обмен файлами</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #fff;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-        }
-
-        .logo {
-            font-size: 3rem;
-            font-weight: 800;
-            margin-bottom: 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .subtitle { font-size: 1.2rem; opacity: 0.9; font-weight: 300; }
-
-        .upload-card {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 50px;
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-        }
-
-        .drop-zone {
-            border: 3px dashed rgba(255,255,255,0.4);
-            border-radius: 20px;
-            padding: 60px 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .drop-zone:hover, .drop-zone.drag-over {
-            border-color: #fff;
-            background: rgba(255,255,255,0.05);
-            transform: scale(1.02);
-        }
-
-        .drop-zone-icon { font-size: 4rem; margin-bottom: 20px; display: block; }
-
-        .drop-zone-text { font-size: 1.3rem; font-weight: 500; margin-bottom: 10px; }
-        .drop-zone-hint { font-size: 0.95rem; opacity: 0.7; }
-
-        .file-input { display: none; }
-
-        .file-list { margin-top: 30px; display: none; }
-        .file-list.active { display: block; }
-
-        .file-item {
-            background: rgba(255,255,255,0.1);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            animation: slideIn 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .file-icon {
-            width: 50px; height: 50px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; flex-shrink: 0;
-        }
-
-        .file-info { flex: 1; min-width: 0; }
-        .file-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .file-size { font-size: 0.85rem; opacity: 0.7; margin-top: 4px; }
-
-        .progress-bar {
-            width: 100%; height: 6px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 3px;
-            margin-top: 10px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #48bb78, #38a169);
-            border-radius: 3px;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .file-status { font-size: 0.85rem; font-weight: 600; min-width: 80px; text-align: right; }
-        .file-status.uploading { color: #68d391; }
-        .file-status.done { color: #68d391; }
-
-        .upload-btn {
-            display: block; width: 100%; padding: 18px;
-            margin-top: 25px;
-            background: linear-gradient(135deg, #48bb78, #38a169);
-            color: white; border: none; border-radius: 16px;
-            font-size: 1.1rem; font-weight: 700;
-            cursor: pointer; transition: all 0.3s;
-            box-shadow: 0 10px 30px rgba(72, 187, 120, 0.3);
-        }
-
-        .upload-btn:hover { transform: translateY(-2px); }
-        .upload-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-        .result-section { display: none; margin-top: 30px; }
-        .result-section.active { display: block; animation: fadeIn 0.5s ease; }
-
-        .result-card {
-            background: rgba(255,255,255,0.15);
-            border-radius: 20px; padding: 30px;
-            text-align: center; border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .success-icon { font-size: 4rem; margin-bottom: 15px; }
-        .result-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 10px; }
-        .result-subtitle { opacity: 0.8; margin-bottom: 25px; }
-
-        .link-box {
-            background: rgba(0,0,0,0.2);
-            border-radius: 12px; padding: 15px 20px;
-            display: flex; align-items: center; gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .link-text {
-            flex: 1; font-family: 'Courier New', monospace;
-            font-size: 0.95rem; color: #68d391;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-
-        .copy-btn {
-            background: rgba(255,255,255,0.2); border: none; color: white;
-            padding: 10px 20px; border-radius: 8px; cursor: pointer;
-            font-weight: 600; transition: all 0.2s; white-space: nowrap;
-        }
-
-        .copy-btn:hover { background: rgba(255,255,255,0.3); }
-        .copy-btn.copied { background: #48bb78; }
-
-        .share-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-        .share-btn {
-            padding: 10px 20px; border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.3);
-            background: rgba(255,255,255,0.1); color: white;
-            cursor: pointer; transition: all 0.2s; font-size: 0.9rem;
-        }
-        .share-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
-
-        .remove-btn {
-            background: rgba(255,100,100,0.2); border: none; color: #fc8181;
-            width: 32px; height: 32px; border-radius: 8px;
-            cursor: pointer; font-size: 1.2rem;
-        }
-        .remove-btn:hover { background: rgba(255,100,100,0.4); }
-
-        .stats { display: flex; justify-content: center; gap: 40px; margin-top: 50px; }
-        .stat-item { text-align: center; }
-        .stat-number { font-size: 2rem; font-weight: 800; }
-        .stat-label { font-size: 0.9rem; opacity: 0.8; margin-top: 5px; }
-
-        footer { text-align: center; margin-top: 60px; padding: 20px; opacity: 0.6; font-size: 0.9rem; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        @media (max-width: 600px) {
-            .upload-card { padding: 30px 20px; }
-            .logo { font-size: 2rem; }
-            .drop-zone { padding: 40px 20px; }
-        }
-    </style>
+    <title>CloudShare — Обмен файлами</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <div class="particles" id="particles"></div>
+
     <div class="container">
         <header>
-            <div class="logo">☁️ CloudShare</div>
-            <p class="subtitle">Загружайте файлы до 2GB и делитесь ими мгновенно</p>
+            <div class="logo">
+                <div class="logo-icon">☁️</div>
+                CloudShare
+            </div>
+            <p class="subtitle">">Загружайте файлы и делитесь ссылками мгновенно</p>
         </header>
 
         <div class="upload-card">
+            <!-- Загрузка -->
             <div class="drop-zone" id="dropZone">
                 <span class="drop-zone-icon">📁</span>
                 <div class="drop-zone-text">Перетащите файлы сюда</div>
-                <div class="drop-zone-hint">или нажмите для выбора файлов</div>
+                <div class="drop-zone-hint">или нажмите для выбора файлов (до 100 МБ)</div>
                 <input type="file" class="file-input" id="fileInput" multiple>
             </div>
 
+            <!-- Список файлов -->
             <div class="file-list" id="fileList"></div>
 
             <button class="upload-btn" id="uploadBtn" style="display: none;">
-                ⬆️ Загрузить файлы
+                ⬆️ Загрузить в облако
             </button>
 
+            <!-- Результат -->
             <div class="result-section" id="resultSection">
                 <div class="result-card">
                     <div class="success-icon">✅</div>
-                    <div class="result-title">Готово!</div>
-                    <div class="result-subtitle">Ваши файлы загружены и готовы к скачиванию</div>
+                    <div class="result-title">Файлы в облаке!</div>
+                    <div class="result-subtitle">Скопируйте ссылку и поделитесь ею</div>
                     
                     <div class="link-box">
                         <span class="link-text" id="shareLink"></span>
@@ -236,202 +51,56 @@
                         <button class="share-btn" onclick="shareWhatsApp()">💬 WhatsApp</button>
                         <button class="share-btn" onclick="shareEmail()">📧 Email</button>
                     </div>
+                    
+                    <div class="expires-info" id="expiresInfo"></div>
                 </div>
             </div>
         </div>
 
         <div class="stats">
-            <div class="stat-item"><div class="stat-number">∞</div><div class="stat-label">Безлимитно</div></div>
-            <div class="stat-item"><div class="stat-number">2GB</div><div class="stat-label">Макс. размер</div></div>
-            <div class="stat-item"><div class="stat-number">0</div><div class="stat-label">Регистрация</div></div>
+            <div class="stat-item">
+                <div class="stat-number">100MB</div>
+                <div class="stat-label">Макс. файл</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">30</div>
+                <div class="stat-label">Дней хранения</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">0</div>
+                <div class="stat-label">Регистрация</div>
+            </div>
         </div>
 
         <footer>
-            <p>🔒 Файлы хранятся 30 дней • Максимальная безопасность</p>
+            <p>🔒 Хранение в Firebase • Шифрование HTTPS • Автоудаление через 30 дней</p>
         </footer>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <!-- ТВОЙ КОНФИГ (вставь сюда свои данные) -->
     <script>
-        const dropZone = document.getElementById('dropZone');
-        const fileInput = document.getElementById('fileInput');
-        const fileList = document.getElementById('fileList');
-        const uploadBtn = document.getElementById('uploadBtn');
-        const resultSection = document.getElementById('resultSection');
-        const copyBtn = document.getElementById('copyBtn');
-        const shareLink = document.getElementById('shareLink');
-
-        let files = [];
-
-        dropZone.addEventListener('click', () => fileInput.click());
+        // ═══════════════════════════════════════
+        // ВСТАВЬ СЮДА СВОЙ firebaseConfig:
+        const firebaseConfig = {
+            apiKey: "ТВОЙ_API_KEY",
+            authDomain: "ТВОЙ_AUTH_DOMAIN",
+            databaseURL: "ТВОЙ_DATABASE_URL",
+            projectId: "ТВОЙ_PROJECT_ID",
+            storageBucket: "ТВОЙ_STORAGE_BUCKET",
+            messagingSenderId: "ТВОЙ_MESSAGING_SENDER_ID",
+            appId: "ТВОЙ_APP_ID",
+            measurementId: "ТВОЙ_MEASUREMENT_ID"
+        };
+        // ═══════════════════════════════════════
         
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('drag-over');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('drag-over');
-        });
-
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-over');
-            handleFiles(e.dataTransfer.files);
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
-        });
-
-        function handleFiles(fileList) {
-            Array.from(fileList).forEach(file => {
-                if (!files.find(f => f.name === file.name && f.size === file.size)) {
-                    files.push(file);
-                }
-            });
-            renderFileList();
-        }
-
-        function getFileIcon(type) {
-            if (type.startsWith('image/')) return '🖼️';
-            if (type.startsWith('video/')) return '🎬';
-            if (type.startsWith('audio/')) return '🎵';
-            if (type.includes('pdf')) return '📄';
-            if (type.includes('zip') || type.includes('rar')) return '📦';
-            return '📎';
-        }
-
-        function formatSize(bytes) {
-            if (bytes === 0) return '0 Б';
-            const k = 1024;
-            const sizes = ['Б', 'КБ', 'МБ', 'ГБ'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function renderFileList() {
-            if (files.length === 0) {
-                fileList.classList.remove('active');
-                uploadBtn.style.display = 'none';
-                return;
-            }
-
-            fileList.innerHTML = '';
-            fileList.classList.add('active');
-            uploadBtn.style.display = 'block';
-
-            files.forEach((file, index) => {
-                const item = document.createElement('div');
-                item.className = 'file-item';
-                item.innerHTML = `
-                    <div class="file-icon">${getFileIcon(file.type)}</div>
-                    <div class="file-info">
-                        <div class="file-name">${file.name}</div>
-                        <div class="file-size">${formatSize(file.size)}</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="progress-${index}"></div>
-                        </div>
-                    </div>
-                    <div class="file-status" id="status-${index}">Ожидание</div>
-                    <button class="remove-btn" onclick="removeFile(${index})">×</button>
-                `;
-                fileList.appendChild(item);
-            });
-        }
-
-        function removeFile(index) {
-            files.splice(index, 1);
-            renderFileList();
-        }
-
-        uploadBtn.addEventListener('click', async () => {
-            uploadBtn.disabled = true;
-            uploadBtn.textContent = '⏳ Загрузка...';
-
-            const formData = new FormData();
-            files.forEach(file => formData.append('files', file));
-
-            const xhr = new XMLHttpRequest();
-
-            xhr.upload.addEventListener('progress', (e) => {
-                if (e.lengthComputable) {
-                    const percentComplete = (e.loaded / e.total) * 100;
-                    files.forEach((_, i) => {
-                        const progressEl = document.getElementById(`progress-${i}`);
-                        const statusEl = document.getElementById(`status-${i}`);
-                        if (progressEl) progressEl.style.width = percentComplete + '%';
-                        if (statusEl) {
-                            statusEl.textContent = Math.round(percentComplete) + '%';
-                            statusEl.className = 'file-status uploading';
-                        }
-                    });
-                }
-            });
-
-            xhr.addEventListener('load', () => {
-                if (xhr.status === 200) {
-                    const response = JSON.parse(xhr.responseText);
-                    
-                    files.forEach((_, i) => {
-                        const progressEl = document.getElementById(`progress-${i}`);
-                        const statusEl = document.getElementById(`status-${i}`);
-                        if (progressEl) progressEl.style.width = '100%';
-                        if (statusEl) {
-                            statusEl.textContent = 'Готово';
-                            statusEl.className = 'file-status done';
-                        }
-                    });
-
-                    setTimeout(() => {
-                        uploadBtn.style.display = 'none';
-                        dropZone.style.display = 'none';
-                        fileList.style.display = 'none';
-                        
-                        shareLink.textContent = response.url;
-                        resultSection.classList.add('active');
-                    }, 500);
-                } else {
-                    alert('Ошибка загрузки!');
-                    uploadBtn.disabled = false;
-                    uploadBtn.textContent = '⬆️ Загрузить файлы';
-                }
-            });
-
-            xhr.addEventListener('error', () => {
-                alert('Ошибка сети!');
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = '⬆️ Загрузить файлы';
-            });
-
-            xhr.open('POST', '/api/upload');
-            xhr.send(formData);
-        });
-
-        copyBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(shareLink.textContent).then(() => {
-                copyBtn.textContent = '✅ Скопировано';
-                copyBtn.classList.add('copied');
-                setTimeout(() => {
-                    copyBtn.textContent = '📋 Копировать';
-                    copyBtn.classList.remove('copied');
-                }, 2000);
-            });
-        });
-
-        function shareTelegram() {
-            const url = `https://t.me/share/url?url=${encodeURIComponent(shareLink.textContent)}`;
-            window.open(url, '_blank');
-        }
-
-        function shareWhatsApp() {
-            const url = `https://wa.me/?text=${encodeURIComponent('Посмотри что я загрузил: ' + shareLink.textContent)}`;
-            window.open(url, '_blank');
-        }
-
-        function shareEmail() {
-            const url = `mailto:?subject=Файл на CloudShare&body=Ссылка на скачивание: ${encodeURIComponent(shareLink.textContent)}`;
-            window.location.href = url;
-        }
+        firebase.initializeApp(firebaseConfig);
     </script>
+
+    <script src="js/app.js"></script>
 </body>
 </html>
