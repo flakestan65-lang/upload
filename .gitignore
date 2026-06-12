@@ -1,0 +1,3 @@
+# Не коммить конфиги с ключами
+js/config.js
+node_modules/
